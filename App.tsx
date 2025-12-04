@@ -17,7 +17,10 @@ import {
   Code,
   CheckCircle2,
   Plug,
-  Cable
+  Cable,
+  Download,
+  Share,
+  X
 } from 'lucide-react';
 import { SensorData, DeviceState, Thresholds, AppTab } from './types';
 import { EnvironmentCard } from './components/EnvironmentCard';
@@ -67,6 +70,39 @@ const App: React.FC = () => {
 
   const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+  // PWA Install State
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [showInstallBanner, setShowInstallBanner] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
+
+  // Check for iOS
+  useEffect(() => {
+    const isIosDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+    setIsIOS(isIosDevice);
+  }, []);
+
+  // Listen for install prompt
+  useEffect(() => {
+    const handler = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setShowInstallBanner(true);
+    };
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        setShowInstallBanner(false);
+      }
+      setDeferredPrompt(null);
+    }
+  };
 
   // --- Hardware Simulation Logic (The "Firmware") ---
   useEffect(() => {
@@ -327,8 +363,47 @@ const App: React.FC = () => {
 
   const renderSettings = () => (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 max-w-2xl mx-auto animate-in fade-in">
-      <h2 className="text-xl font-bold text-slate-800 mb-6">系统阈值设置</h2>
+      <h2 className="text-xl font-bold text-slate-800 mb-6">系统设置</h2>
       
+      {/* APP Install Section */}
+      <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 mb-8">
+        <h3 className="font-bold text-blue-800 mb-2 flex items-center gap-2">
+          <Download className="w-5 h-5"/> 安装 APP 到手机
+        </h3>
+        <p className="text-sm text-blue-600 mb-4">
+          将此控制台作为 APP 安装到您的手机桌面，即可全屏运行并获得更流畅的体验。
+        </p>
+        <div className="flex gap-3">
+          {deferredPrompt ? (
+            <button 
+              onClick={handleInstallClick}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 transition"
+            >
+              点击安装
+            </button>
+          ) : (
+            <button 
+              disabled
+              className="bg-blue-200 text-blue-400 px-4 py-2 rounded-lg text-sm font-semibold cursor-not-allowed"
+            >
+              {isIOS ? '请按下方说明操作' : '已安装或不支持'}
+            </button>
+          )}
+        </div>
+        
+        {/* iOS Instructions */}
+        {isIOS && (
+          <div className="mt-4 pt-4 border-t border-blue-200 text-sm text-blue-700">
+             <p className="font-bold mb-1">iOS 用户安装方法：</p>
+             <ol className="list-decimal list-inside space-y-1">
+               <li>点击 Safari 浏览器底部的 <Share className="w-4 h-4 inline" /> 分享按钮</li>
+               <li>向下滑动并选择“添加到主屏幕”</li>
+             </ol>
+          </div>
+        )}
+      </div>
+
+      <h2 className="text-lg font-bold text-slate-800 mb-4">自动化阈值</h2>
       <div className="space-y-8">
         <div>
           <div className="flex justify-between mb-2">
@@ -548,8 +623,31 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen pb-20 md:pb-0 font-sans">
+      {/* Install Banner (Mobile) */}
+      {showInstallBanner && !isIOS && (
+         <div className="fixed top-0 left-0 right-0 bg-blue-600 text-white z-50 p-3 shadow-lg flex justify-between items-center animate-in slide-in-from-top">
+            <div className="flex items-center space-x-3">
+               <div className="bg-white/20 p-1.5 rounded-lg">
+                  <Download className="w-5 h-5" />
+               </div>
+               <div className="text-sm">
+                  <p className="font-bold">安装“衣柜卫士”APP</p>
+                  <p className="text-xs text-blue-100">更流畅、支持离线访问</p>
+               </div>
+            </div>
+            <div className="flex items-center space-x-2">
+               <button onClick={() => setShowInstallBanner(false)} className="p-1 opacity-70 hover:opacity-100">
+                  <X className="w-5 h-5"/>
+               </button>
+               <button onClick={handleInstallClick} className="bg-white text-blue-600 text-xs font-bold px-3 py-1.5 rounded-full">
+                  立即安装
+               </button>
+            </div>
+         </div>
+      )}
+
       {/* Header */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-10">
+      <header className={`bg-white border-b border-slate-200 sticky z-10 transition-all ${showInstallBanner ? 'top-14' : 'top-0'}`}>
         <div className="max-w-5xl mx-auto px-4 py-4 flex justify-between items-center">
           <div className="flex items-center space-x-2">
              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-blue-200">
@@ -576,7 +674,7 @@ const App: React.FC = () => {
       </main>
 
       {/* Bottom Navigation (Mobile Style) */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-6 py-2 flex justify-between items-center md:hidden z-20">
+      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-6 py-2 flex justify-between items-center md:hidden z-20 pb-safe">
         <button 
           onClick={() => setActiveTab(AppTab.DASHBOARD)}
           className={`p-2 rounded-xl flex flex-col items-center space-y-1 ${activeTab === AppTab.DASHBOARD ? 'text-blue-600' : 'text-slate-400'}`}
