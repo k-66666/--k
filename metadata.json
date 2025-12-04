@@ -1,0 +1,5 @@
+{
+  "name": "智能衣柜卫士",
+  "description": "一个智能物联网仪表盘，用于衣柜防霉、实时监控和自动控制，配备AI卫生分析功能。",
+  "requestFramePermissions": []
+}
