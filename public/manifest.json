@@ -1,0 +1,21 @@
+{
+  "short_name": "衣柜卫士",
+  "name": "智能衣柜防霉护理系统",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2590/2590580.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2590/2590580.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#ffffff",
+  "background_color": "#ffffff",
+  "orientation": "portrait"
+}
